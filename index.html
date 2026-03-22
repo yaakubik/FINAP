@@ -336,7 +336,7 @@ const PAGES=[
 {id:'bill',l:'Vyúčtování',sv:'<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>'},
 ];
 let CP='dash',SM=null,AV=[];
-function nav(p){document.querySelectorAll('.pg').forEach(x=>x.classList.remove('on'));document.querySelectorAll('.nv a').forEach(x=>x.classList.remove('on'));const el=document.getElementById('pg-'+p);if(el){el.classList.add('on');el.classList.add('an')}document.querySelector('.nv a[data-p="'+p+'"]')?.classList.add('on');CP=p;render()}
+function nav(p){document.getElementById('sb').classList.remove('open');document.querySelectorAll('.pg').forEach(x=>x.classList.remove('on'));document.querySelectorAll('.nv a').forEach(x=>x.classList.remove('on'));const el=document.getElementById('pg-'+p);if(el){el.classList.add('on');el.classList.add('an')}document.querySelector('.nv a[data-p="'+p+'"]')?.classList.add('on');CP=p;render()} 
 function render(){({dash:rDash,year:rYear,tx:rTx,imp:rImp,inv:rInv,wealth:rWealth,cat:rCat,bill:rBill})[CP]?.()}
 document.getElementById('nv').innerHTML=PAGES.map(p=>'<a href="#" data-p="'+p.id+'" onclick="event.preventDefault();nav(\''+p.id+'\')" class="'+(p.id==='dash'?'on':'')+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+p.sv+'</svg>'+p.l+'</a>').join('');
 
