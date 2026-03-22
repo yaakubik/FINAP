@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FinTrack</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#08080f;--bg2:#0e0e1a;--bg3:#141422;
+  --card:rgba(255,255,255,0.025);--card-h:rgba(255,255,255,0.045);
+  --brd:rgba(255,255,255,0.05);--brd2:rgba(255,255,255,0.1);
+  --t1:#eeeef5;--t2:#8b8ba0;--t3:#4a4a5e;
+  --ac:#7c5cfc;--ac2:#6343e0;--ac-g:linear-gradient(135deg,#7c5cfc,#4f8ffc);
+  --g:#2dd881;--r:#f0475a;--o:#ff8a3d;--bl:#4f8ffc;
+  --pu:#9d6df5;--pk:#f06;--tl:#2dd4bf;--yl:#fbbf24;--cy:#22d3ee;
+  --glow:0 0 30px rgba(124,92,252,0.08);
+  --radius:14px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Outfit',system-ui,sans-serif;background:var(--bg);color:var(--t1);height:100vh;overflow:hidden;letter-spacing:0.01em}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.06);border-radius:10px}
+.m{font-family:'JetBrains Mono',monospace;letter-spacing:-0.02em}
+
+/* Layout */
+#app{display:flex;height:100vh}
+#sb{width:210px;background:var(--bg2);border-right:1px solid var(--brd);display:flex;flex-direction:column;flex-shrink:0;padding:20px 0;transition:width .3s}
+#mn{flex:1;overflow-y:auto;padding:28px 32px 52px;background:radial-gradient(ellipse at 30% 0%,rgba(124,92,252,0.03),transparent 60%)}
+
+/* Logo */
+.logo{display:flex;align-items:center;gap:11px;padding:0 18px;margin-bottom:30px}
+.li{width:38px;height:38px;border-radius:12px;background:var(--ac-g);display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:15px;flex-shrink:0;box-shadow:0 4px 20px rgba(124,92,252,0.3)}
+
+/* Nav */
+.nv{display:flex;flex-direction:column;gap:2px;padding:0 10px;flex:1}
+.nv a{display:flex;align-items:center;gap:11px;padding:9px 14px;border-radius:10px;text-decoration:none;color:var(--t3);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s}
+.nv a:hover{background:rgba(124,92,252,0.06);color:var(--t2);transform:translateX(2px)}
+.nv a.on{background:rgba(124,92,252,0.1);color:var(--ac);font-weight:600;box-shadow:inset 3px 0 0 var(--ac)}
+.nv a svg{width:17px;height:17px;flex-shrink:0;opacity:.7}
+.nv a.on svg{opacity:1}
+
+/* Cards */
+.cd{background:var(--bg3);border:1px solid var(--brd);border-radius:var(--radius);padding:18px 20px;margin-bottom:16px;transition:all .2s}
+.cd:hover{border-color:var(--brd2);box-shadow:var(--glow)}
+
+/* KPI Grid */
+.kg{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+
+/* Buttons */
+.bt{display:inline-flex;align-items:center;gap:6px;padding:7px 15px;border-radius:9px;border:none;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;letter-spacing:0.01em}
+.bp{background:var(--ac-g);color:#fff;box-shadow:0 2px 12px rgba(124,92,252,0.25)}.bp:hover{filter:brightness(1.1);transform:translateY(-1px);box-shadow:0 4px 20px rgba(124,92,252,0.35)}
+.bg{background:rgba(124,92,252,0.06);border:1px solid rgba(124,92,252,0.15);color:var(--ac)}.bg:hover{background:rgba(124,92,252,0.1);border-color:rgba(124,92,252,0.3)}
+.bs{padding:5px 10px;font-size:11px;border-radius:7px}
+.bd{background:rgba(240,71,90,0.06);border:1px solid rgba(240,71,90,0.12);color:var(--r)}.bd:hover{background:rgba(240,71,90,0.1)}
+
+/* Tables */
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:left;padding:8px 10px;color:var(--t3);font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;border-bottom:1px solid var(--brd)}
+td{padding:9px 10px;border-bottom:1px solid rgba(255,255,255,0.02);transition:background .1s}
+tr:hover td{background:rgba(124,92,252,0.03)}
+
+/* Badges */
+.ba{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:10.5px;font-weight:600;border:none;font-family:inherit;cursor:pointer;transition:all .15s;letter-spacing:0.01em}
+.ba:hover{filter:brightness(1.3);transform:scale(1.04)}
+.ba i{width:5px;height:5px;border-radius:50%;display:inline-block}
+
+/* Tags */
+.tg{display:inline-block;padding:3px 8px;border-radius:6px;font-size:9.5px;font-weight:600;letter-spacing:0.02em}
+
+/* Dropzone */
+.dz{border:2px dashed rgba(124,92,252,0.2);border-radius:var(--radius);padding:40px;text-align:center;cursor:pointer;transition:all .25s;background:rgba(124,92,252,0.01)}
+.dz:hover,.dz.active{border-color:var(--ac);background:rgba(124,92,252,0.04);box-shadow:0 0 40px rgba(124,92,252,0.06)}
+
+/* Inputs */
+input,select{background:rgba(255,255,255,0.03);border:1px solid var(--brd);border-radius:9px;padding:8px 13px;font-size:12.5px;color:var(--t1);font-family:inherit;outline:none;transition:all .15s}
+input:focus,select:focus{border-color:var(--ac);box-shadow:0 0 0 3px rgba(124,92,252,0.1)}
+input::placeholder{color:var(--t3)}
+select option{background:var(--bg3)}
+.ii{width:100%;margin-top:4px;background:rgba(255,255,255,0.02);font-size:12.5px}
+
+/* Pages */
+.pg{display:none}.pg.on{display:block}
+
+/* Charts */
+.cb{position:relative;height:230px}
+
+/* Alerts */
+.al{border-radius:12px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:flex-start;gap:10px;font-size:12.5px;backdrop-filter:blur(10px)}
+.al-s{background:rgba(45,216,129,0.06);border:1px solid rgba(45,216,129,0.12)}
+.al-e{background:rgba(240,71,90,0.06);border:1px solid rgba(240,71,90,0.12)}
+
+/* Month nav */
+.mn{display:flex;align-items:center;gap:10px}
+.mn button{width:30px;height:30px;border-radius:8px;border:1px solid var(--brd);background:transparent;color:var(--t2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;transition:all .15s}
+.mn button:hover{border-color:var(--ac);color:var(--ac);background:rgba(124,92,252,0.06)}
+.mn span{font-size:14px;font-weight:600;min-width:130px;text-align:center}
+
+/* Dropdown */
+.dd{position:absolute;z-index:100;background:var(--bg3);border:1px solid var(--brd2);border-radius:12px;padding:5px;box-shadow:0 12px 40px rgba(0,0,0,0.5),0 0 0 1px rgba(255,255,255,0.03);min-width:170px;max-height:300px;overflow-y:auto;backdrop-filter:blur(20px)}
+.dd button{display:flex;align-items:center;gap:7px;width:100%;text-align:left;padding:6px 10px;border-radius:8px;border:none;font-size:11.5px;color:var(--t2);background:transparent;cursor:pointer;font-family:inherit;transition:all .1s}
+.dd button:hover{background:rgba(124,92,252,0.08)}
+.dd button.sl{background:rgba(124,92,252,0.12);color:var(--ac);font-weight:600}
+
+/* Hidden tx */
+.ht{opacity:.25;text-decoration:line-through}
+
+/* Animations */
+@keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.an{animation:fi .3s ease forwards}
+
+/* Mobile */
+@media(max-width:768px){
+  #sb{position:fixed;left:-220px;z-index:50;height:100vh;transition:left .3s}
+  #sb.open{left:0;box-shadow:20px 0 60px rgba(0,0,0,0.5)}
+  #mn{padding:20px 16px 40px}
+  .kg{grid-template-columns:repeat(2,1fr)}
+  .mob-menu{display:flex!important}
+}
+.mob-menu{display:none;position:fixed;top:16px;left:16px;z-index:40;width:36px;height:36px;border-radius:9px;background:var(--bg3);border:1px solid var(--brd);align-items:center;justify-content:center;cursor:pointer;color:var(--t2)}
+</style>
+</head>
+<body>
+<div class="mob-menu" onclick="document.getElementById('sb').classList.toggle('open')">≡</div>
+<div id="app">
+<div id="sb">
+<div class="logo"><div class="li">FT</div><div><div style="font-size:15px;font-weight:700;color:var(--t1)">FinTrack</div><div style="font-size:9px;color:var(--t3);letter-spacing:2px;font-weight:500">OSOBNÍ FINANCE</div></div></div>
+<div class="nv" id="nv"></div>
+<div style="padding:18px;border-top:1px solid var(--brd);margin-top:10px">
+<div style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--t3);margin-bottom:4px"><span style="width:6px;height:6px;border-radius:50%;background:var(--g);display:inline-block"></span>Moneta</div>
+<div style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--t3)"><span style="width:6px;height:6px;border-radius:50%;background:var(--bl);display:inline-block"></span>Raiffeisenbank</div>
+</div>
+</div>
+<div id="mn">
+<div id="pg-dash" class="pg on an"></div>
+<div id="pg-year" class="pg"></div>
+<div id="pg-tx" class="pg"></div>
+<div id="pg-imp" class="pg"></div>
+<div id="pg-inv" class="pg"></div>
+<div id="pg-wealth" class="pg"></div>
+<div id="pg-cat" class="pg"></div>
+<div id="pg-bill" class="pg"></div>
+</div>
+</div>
+<script>
+
+// ═══ DB ═══
+let db,R;
+function odb(){return new Promise((s,j)=>{const r=indexedDB.open('FT4',1);r.onupgradeneeded=e=>{const d=e.target.result;const t=d.createObjectStore('tx',{keyPath:'id',autoIncrement:true});t.createIndex('hash','hash',{unique:true});t.createIndex('date','date');d.createObjectStore('imp',{keyPath:'id',autoIncrement:true});d.createObjectStore('inv',{keyPath:'id',autoIncrement:true});d.createObjectStore('st',{keyPath:'key'});d.createObjectStore('snap',{keyPath:'id',autoIncrement:true})};r.onsuccess=e=>{db=e.target.result;R=true;s()};r.onerror=e=>j(e.target.error);r.onblocked=()=>j(new Error('blocked'))})}
+function da(s,d){return new Promise((r,j)=>{const q=db.transaction(s,'readwrite').objectStore(s).add(d);q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error)})}
+function dg(s){return new Promise((r,j)=>{const q=db.transaction(s,'readonly').objectStore(s).getAll();q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error)})}
+function dp(s,d){return new Promise((r,j)=>{const q=db.transaction(s,'readwrite').objectStore(s).put(d);q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error)})}
+function dd(s,id){return new Promise((r,j)=>{const q=db.transaction(s,'readwrite').objectStore(s).delete(id);q.onsuccess=()=>r();q.onerror=()=>j(q.error)})}
+function dh(h){return new Promise(r=>{const q=db.transaction('tx','readonly').objectStore('tx').index('hash').get(h);q.onsuccess=()=>r(!!q.result);q.onerror=()=>r(false)})}
+function gs(k){return new Promise(r=>{try{const q=db.transaction('st','readonly').objectStore('st').get(k);q.onsuccess=()=>r(q.result?.value??null);q.onerror=()=>r(null)}catch(e){r(null)}})}
+function ss(k,v){return dp('st',{key:k,value:v})}
+
+// ═══ CATEGORIES ═══
+let CATS=[
+// Skupina Jídlo
+{id:1,n:'Potraviny',group:'Jídlo',i:'',c:'#f97316'},
+{id:15,n:'Restaurace',group:'Jídlo',i:'',c:'#e85d04'},
+// Doprava
+{id:3,n:'MHD / PID',i:'',c:'#3b82f6'},
+{id:16,n:'Auto',i:'',c:'#ef4444'},
+// Předplatné
+{id:5,n:'Předplatné',i:'',c:'#6366f1'},
+// Skupina Zábava
+{id:17,n:'Hospody & bary',group:'Zábava',i:'',c:'#fbbf24'},
+{id:18,n:'Hudba & kultura',group:'Zábava',i:'',c:'#a78bfa'},
+{id:19,n:'Hry & software',group:'Zábava',i:'',c:'#1d4ed8'},
+{id:20,n:'Sport & outdoor',group:'Zábava',i:'',c:'#16a34a'},
+// Skupina Nákupy
+{id:21,n:'Oblečení',group:'Nákupy',i:'',c:'#14b8a6'},
+{id:22,n:'Drogerie & kosmetika',group:'Nákupy',i:'',c:'#ec4899'},
+{id:23,n:'Domácnost & nábytek',group:'Nákupy',i:'',c:'#f59e0b'},
+{id:24,n:'Ostatní nákupy',group:'Nákupy',i:'',c:'#8b5cf6'},
+// Speciální
+{id:7,n:'Příjem',i:'',c:'#22c55e'},
+{id:8,n:'Investice',i:'',c:'#0ea5e9'},
+{id:10,n:'Zdraví',i:'',c:'#f43f5e'},
+{id:11,n:'Ostatní',i:'',c:'#6b7280'},
+{id:12,n:'Spoření',i:'',c:'#c4b5fd'},
+{id:13,n:'Převod',i:'',c:'#475569'},
+{id:14,n:'Vyrovnání',i:'',c:'#2dd4bf'},
+];
+const CATS_VER=2;
+async function loadCats(){const ver=await gs('catsVer');if(ver===CATS_VER){const c=await gs('cats');if(c)CATS=c}else{await ss('cats',CATS);await ss('catsVer',CATS_VER)}}
+async function saveCats(){await ss('cats',CATS);await ss('catsVer',CATS_VER)}
+
+const DEF_RULES=[
+// Potraviny (id:1)
+...['albert','lidl','kaufland','billa','tesco','penny','rohlik','rohlík','kosik','košík','globus','makro','potraviny','delikomat','hot-shop','banh mi','lahudky'].map(p=>({p,c:1})),
+// Restaurace (id:15)
+...['wolt','bolt food','dáme jídlo','foodora','mcdonalds','mcdonald','starbucks','kfc','subway','pizza','restaura','bistro','bufet'].map(p=>({p,c:15})),
+// MHD / PID (id:3)
+...['české dráhy','ceske drahy','regiojet','flixbus','dpp','lítačka','litacka'].map(p=>({p,c:3})),
+// Auto (id:16)
+...['uber','liftago','shell','benzina','omv','parking'].map(p=>({p,c:16})),
+// Předplatné (id:5)
+...['netflix','spotify','youtube','apple.com','hbo','disney','openai','chatgpt','github','microsoft 365','adobe','icloud'].map(p=>({p,c:5})),
+// Hospody & bary (id:17)
+...['hospoda','pivnice','hostinec','pub ','cocktail bar','wine bar'].map(p=>({p,c:17})),
+// Hudba & kultura (id:18)
+...['cinema','kino','goout','ticketmaster','vstupenka','koncert','divadlo','galerie'].map(p=>({p,c:18})),
+// Hry & software (id:19)
+...['steam','playstation','xbox','app store','google play','nintendo'].map(p=>({p,c:19})),
+// Sport & outdoor (id:20)
+...['decathlon','fitness','max fitness','bazén','lezeck','sportisimo','hervis'].map(p=>({p,c:20})),
+// Oblečení (id:21)
+...['zalando','zara','h&m','vinted','bonprix','reserved','about you'].map(p=>({p,c:21})),
+// Drogerie & kosmetika (id:22)
+...['dm drogerie','rossmann','notino','sephora','douglas'].map(p=>({p,c:22})),
+// Domácnost & nábytek (id:23)
+...['ikea','baumax','hornbach','obi ','jysk'].map(p=>({p,c:23})),
+// Ostatní nákupy (id:24)
+...['alza','czc.cz','datart','mall.cz','amazon','manboxeo'].map(p=>({p,c:24})),
+// Příjem (id:7)
+...['mzda','výplata','vyplata','příjem','prijem','salary','bonus','cetin a.s'].map(p=>({p,c:7})),
+// Investice (id:8)
+...['portu','degiro','xtb','trading 212','coinbase','binance','anycoin','etoro'].map(p=>({p,c:8})),
+// Zdraví (id:10)
+...['lékárna','ordinace','zubn','nemocnice','klinika'].map(p=>({p,c:10})),
+// Spoření (id:12)
+...['spořicí','sporici','spoření','sporeni','spořák','sporak'].map(p=>({p,c:12})),
+];
+let RULES=[...DEF_RULES];
+const RULES_VER=2;
+async function loadRules(){const ver=await gs('rulesVer');if(ver===RULES_VER){const r=await gs('rules');if(r)RULES=r}else{RULES=[...DEF_RULES];await ss('rules',RULES);await ss('rulesVer',RULES_VER)}}
+async function saveRules(){await ss('rules',RULES);await ss('rulesVer',RULES_VER)}
+function N(s){return(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim()}
+function catOf(d,cp,a){const t=N(d+' '+(cp||''));for(const r of RULES)if(t.includes(N(r.p)))return r.c;return a>0?7:11}
+function gc(id){return CATS.find(c=>c.id===id)||CATS.find(c=>c.id===11)}
+function gCatGroups(catData){const gm={};const ug=[];catData.forEach(c=>{if(c.group){if(!gm[c.group]){const fc=CATS.find(x=>x.group===c.group);gm[c.group]={n:c.group,total:0,subs:[],c:fc?.c||c.c,isGroup:true}}gm[c.group].total+=c.total;gm[c.group].subs.push(c)}else ug.push(c)});return[...Object.values(gm),...ug].sort((a,b)=>b.total-a.total)}
+function catSelectHTML(){const groups={};const ug=[];CATS.forEach(c=>{if(c.group){if(!groups[c.group])groups[c.group]=[];groups[c.group].push(c)}else ug.push(c)});let h='<option value="">Kategorie</option>';Object.entries(groups).forEach(([g,cs])=>{h+=`<optgroup label="${g}">${cs.map(c=>`<option value="${c.id}">${c.n}</option>`).join('')}</optgroup>`});ug.forEach(c=>{h+=`<option value="${c.id}">${c.n}</option>`});return h}
+function isE(t){return t.amount<0&&t.categoryId!==12&&t.categoryId!==8&&t.categoryId!==13&&t.categoryId!==14&&!t.hidden}
+function isInc(t){return t.amount>0&&t.categoryId!==12&&t.categoryId!==13&&t.categoryId!==14&&!t.hidden}
+function isVyr(t){return t.categoryId===14&&!t.hidden}
+
+// ═══ CSV ═══
+function pCSV(text,dl){const rw=[];let cu='',q=false;for(let i=0;i<text.length;i++){const c=text[i];if(c==='"'){q=!q;cu+=c;continue}if(c==='\r')continue;if(c==='\n'&&!q){if(cu.trim())rw.push(cu);cu='';continue}cu+=c}if(cu.trim())rw.push(cu);if(rw.length<2)return{h:[],r:[]};function sf(l){const f=[];let fd='',q2=false;for(let i=0;i<l.length;i++){const c=l[i];if(c==='"'){if(q2&&l[i+1]==='"'){fd+='"';i++}else q2=!q2;continue}if(c===dl&&!q2){f.push(fd.trim());fd='';continue}fd+=c}f.push(fd.trim());return f}const h=sf(rw[0]).map(x=>x.replace(/^﻿/,''));const res=[];for(let i=1;i<rw.length;i++){const v=sf(rw[i]);const row={};h.forEach((hd,j)=>{row[hd]=v[j]||''});res.push(row)}return{h,r:res}}
+function dDl(t){const f=t.split('\n').slice(0,3).join('\n');return(f.match(/;/g)||[]).length>=(f.match(/,/g)||[]).length?';':','}
+function pN(s){if(!s)return 0;return parseFloat(s.replace(/\s/g,'').replace(/\./g,'').replace(',','.'))||0}
+function pD(s){if(!s)return null;s=s.trim();let m=s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);if(m)return m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0');m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);if(m)return s;return null}
+function fC(h,cs){for(const c of cs){const f=h.find(x=>N(x)===N(c));if(f)return f}return null}
+function hT(b,d,a,ds,cp){const s=[b,d,a.toFixed(2),N(ds),N(cp||'')].join('|');let h=0;for(let i=0;i<s.length;i++)h=((h<<5)-h+s.charCodeAt(i))|0;return'h'+Math.abs(h).toString(36)}
+
+async function doImp(text,bank,fname){
+const dl=dDl(text);const{h,r}=pCSV(text,dl);if(!r.length)throw new Error('Prázdný soubor');
+const dC=fC(h,['Datum provedení','Odesláno','Splatnost','Datum','Datum zaúčtování']);
+const aC=fC(h,['Zaúčtovaná částka','Částka','Castka']);
+if(!dC||!aC)throw new Error('Sloupce nenalezeny: '+h.join(', '));
+const dsC=['Zpráva','Poznámka','Popis platby','Popis platby 2','Popis platby 3','Zpráva pro příjemce','Poznámka pro mě','Typ transakce','Kategorie transakce'].map(c=>fC(h,[c])).filter(Boolean);
+const cpC=['Název obchodníka','Název protiúčtu','Název účtu příjemce'].map(c=>fC(h,[c])).filter(Boolean);
+const rC=fC(h,['Id transakce','ID transakce','Bankovní reference']);
+// Raw account number columns for transfer detection
+const acctC=fC(h,['Číslo protiúčtu','Protiúčet']);
+const bankCodeC=fC(h,['Banka protiúčtu']);
+const ownAcctC=fC(h,['Číslo účtu']);
+let ins=0,skip=0,err=0;const impId=Date.now();
+for(const row of r){try{const dt=pD(row[dC]);const am=pN(row[aC]);if(!dt||am===0){err++;continue}
+const ds=dsC.map(c=>row[c]?.trim()).filter(Boolean).join(' | ');const cp=cpC.map(c=>row[c]?.trim()).filter(Boolean)[0]||'';
+const cpAcct=(acctC?row[acctC]?.trim():'')+(bankCodeC&&row[bankCodeC]?.trim()?'/'+row[bankCodeC].trim():'');
+const hash=hT(bank,dt,am,ds,cp);if(await dh(hash)){skip++;continue}
+let cid=catOf(ds,cp,am);
+// Auto-detect transfers between own accounts
+if(cid!==12&&cid!==7){
+  const isTransfer=detectTransfer(bank,cpAcct,ds,cp);
+  if(isTransfer)cid=13;
+}
+await da('tx',{date:dt,amount:am,description:ds,counterparty:cp,cpAcct,bankRef:rC?row[rC]?.trim():'',bankName:bank,hash,categoryId:cid,autoCategory:true,hidden:false,impId});
+ins++}catch(e){err++}}
+await da('imp',{bankName:bank,filename:fname,date:new Date().toISOString(),parsed:r.length,inserted:ins,skipped:skip,errors:err,impId});
+// Post-import: detect matching transfer pairs
+await detectTransferPairs();
+return{parsed:r.length,inserted:ins,skipped:skip}}
+
+// Detect if a single transaction is likely a transfer between own accounts
+function detectTransfer(bank,cpAcct,desc,cp){
+const d=N(desc+' '+cp);
+// Moneta (0600) sending to Raiffeisen (5500) or vice versa
+if(bank==='Moneta Money Bank'&&cpAcct.includes('/5500'))return true;
+if(bank==='Moneta Money Bank'&&cpAcct.includes('5500'))return true;
+if(bank==='Raiffeisenbank'&&cpAcct.includes('/0600'))return true;
+if(bank==='Raiffeisenbank'&&cpAcct.includes('0600'))return true;
+// Common transfer descriptions
+if(d.includes('vlastni prevod'))return true;
+if(d.includes('prevod mezi ucty'))return true;
+if(d.includes('prevod mezi'))return true;
+// Raiffeisen internal: look for own name patterns
+if(d.includes('sykor')&&(d.includes('prevod')||d.includes('prikaz')))return true;
+return false;
+}
+
+// After import: find matching pairs (same date, opposite amounts, different banks) and mark both as transfers
+async function detectTransferPairs(){
+const tx=await dg('tx');
+const byDate={};
+tx.forEach(t=>{if(!t.date)return;if(!byDate[t.date])byDate[t.date]=[];byDate[t.date].push(t)});
+let marked=0;
+for(const[date,dayTx]of Object.entries(byDate)){
+  if(dayTx.length<2)continue;
+  for(let i=0;i<dayTx.length;i++){
+    for(let j=i+1;j<dayTx.length;j++){
+      const a=dayTx[i],b=dayTx[j];
+      // Same amount, opposite sign, different banks
+      if(a.bankName!==b.bankName&&Math.abs(a.amount+b.amount)<1&&a.categoryId!==13&&b.categoryId!==13){
+        a.categoryId=13;a.autoCategory=true;await dp('tx',a);
+        b.categoryId=13;b.autoCategory=true;await dp('tx',b);
+        marked+=2;
+      }
+    }
+  }
+}
+if(marked)console.log('Auto-detected',marked,'transfer transactions');
+}
+
+// ═══ HELPERS ═══
+const F=n=>new Intl.NumberFormat('cs-CZ').format(Math.round(Math.abs(n)));
+const MN=['leden','únor','březen','duben','květen','červen','červenec','srpen','září','říjen','listopad','prosinec'];
+const MS=['Led','Úno','Bře','Dub','Kvě','Čvn','Čvc','Srp','Zář','Říj','Lis','Pro'];
+function mL(ym){const[y,m]=ym.split('-');return MN[parseInt(m)-1]+' '+y}
+function gM(txs){const s=new Set();txs.forEach(t=>{if(t.date&&!t.hidden)s.add(t.date.slice(0,7))});return[...s].sort()}
+const HIST={'2025':{'2025-01':{i:29994,e:11744},'2025-02':{i:25660,e:18210},'2025-03':{i:27674,e:14870},'2025-04':{i:28655,e:18467},'2025-05':{i:27177,e:12964},'2025-06':{i:25855,e:11176},'2025-07':{i:46551,e:19158},'2025-08':{i:26244,e:15821},'2025-09':{i:42566,e:26221}},'2024':{'2024-08':{i:19779,e:13676},'2024-09':{i:25660,e:15801},'2024-10':{i:34652,e:22308},'2024-11':{i:24271,e:18661},'2024-12':{i:36340,e:12447}}};
+
+// ═══ NAV ═══
+const PAGES=[
+{id:'dash',l:'Dashboard',sv:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>'},
+{id:'year',l:'Roční přehled',sv:'<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>'},
+{id:'tx',l:'Transakce',sv:'<rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/>'},
+{id:'imp',l:'Import',sv:'<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>'},
+{id:'inv',l:'Investice',sv:'<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>'},
+{id:'wealth',l:'Jmění',sv:'<circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 100 4h4a2 2 0 110 4H8"/><line x1="12" y1="6" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="18"/>'},
+{id:'cat',l:'Kategorie',sv:'<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>'},
+{id:'bill',l:'Vyúčtování',sv:'<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>'},
+];
+let CP='dash',SM=null,AV=[];
+function nav(p){document.querySelectorAll('.pg').forEach(x=>x.classList.remove('on'));document.querySelectorAll('.nv a').forEach(x=>x.classList.remove('on'));const el=document.getElementById('pg-'+p);if(el){el.classList.add('on');el.classList.add('an')}document.querySelector('.nv a[data-p="'+p+'"]')?.classList.add('on');CP=p;render()}
+function render(){({dash:rDash,year:rYear,tx:rTx,imp:rImp,inv:rInv,wealth:rWealth,cat:rCat,bill:rBill})[CP]?.()}
+document.getElementById('nv').innerHTML=PAGES.map(p=>'<a href="#" data-p="'+p.id+'" onclick="event.preventDefault();nav(\''+p.id+'\')" class="'+(p.id==='dash'?'on':'')+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+p.sv+'</svg>'+p.l+'</a>').join('');
+
+function rMN(id,fn){const el=document.getElementById(id);if(!el||!AV.length){if(el)el.innerHTML='';return}if(!SM||!AV.includes(SM))SM=AV[AV.length-1];const i=AV.indexOf(SM);el.innerHTML='<button '+(i<=0?'disabled style="opacity:.3"':'')+" onclick=\"event.stopPropagation();SM=AV[AV.indexOf(SM)-1];"+fn+"()\">&lsaquo;</button><span>"+mL(SM)+'</span><button '+(i>=AV.length-1?'disabled style="opacity:.3"':'')+" onclick=\"event.stopPropagation();SM=AV[AV.indexOf(SM)+1];"+fn+"()\">&rsaquo;</button>"}
+
+// ═══ DASHBOARD ═══
+let CH={};
+function dCH(){Object.values(CH).forEach(c=>{try{c.destroy()}catch(e){}});CH={}}
+async function rDash(){
+const tx=(await dg('tx')).filter(t=>!t.hidden);AV=gM(tx);
+const el=document.getElementById('pg-dash');
+if(!tx.length){el.innerHTML='<h1 style="font-size:22px;font-weight:700;margin-bottom:16px">Dashboard</h1><div class="cd" style="text-align:center;padding:50px"><p style="color:var(--t3)">Přejděte do <a style="color:var(--ac);cursor:pointer" onclick="nav(\'imp\')">Import</a></p></div>';return}
+if(!SM||!AV.includes(SM))SM=AV[AV.length-1];
+const cur=tx.filter(t=>t.date?.startsWith(SM));const pi=AV.indexOf(SM);const prv=pi>0?tx.filter(t=>t.date?.startsWith(AV[pi-1])):[];
+const inc=cur.filter(t=>isInc(t)).reduce((s,t)=>s+t.amount,0);
+const exp=cur.filter(t=>isE(t)).reduce((s,t)=>s+Math.abs(t.amount),0);
+const vyr=cur.filter(t=>isVyr(t)).reduce((s,t)=>s+Math.abs(t.amount),0);
+const netExp=exp-vyr;
+const sav=cur.filter(t=>t.categoryId===12).reduce((s,t)=>s+Math.abs(t.amount),0);
+const pI=prv.filter(t=>isInc(t)).reduce((s,t)=>s+t.amount,0);
+const pE=prv.filter(t=>isE(t)).reduce((s,t)=>s+Math.abs(t.amount),0);
+const pc=(c,p)=>p?((c-p)/p*100).toFixed(1):'';
+// Categories
+const cT={};cur.filter(t=>isE(t)).forEach(t=>{cT[t.categoryId]=(cT[t.categoryId]||0)+Math.abs(t.amount)});
+const cD=CATS.filter(c=>cT[c.id]).map(c=>({...c,total:cT[c.id]})).sort((a,b)=>b.total-a.total);
+const cDG=gCatGroups(cD);
+const cTot=cDG.reduce((s,c)=>s+c.total,0);
+// Monthly
+const mo={};tx.forEach(t=>{const m=t.date?.slice(0,7);if(!m)return;if(!mo[m])mo[m]={i:0,e:0};if(isInc(t))mo[m].i+=t.amount;else if(isE(t))mo[m].e+=Math.abs(t.amount)});
+const sM=Object.keys(mo).sort().slice(-12);
+// Daily avg & savings rate
+const dm=new Date(SM.split('-')[0],SM.split('-')[1],0).getDate();
+const dp=SM===(new Date().toISOString().slice(0,7))?new Date().getDate():dm;
+const dAvg=dp?netExp/dp:0;const sRate=inc?((inc-netExp)/inc*100).toFixed(1):0;
+// Top expenses
+const top=cur.filter(t=>isE(t)).sort((a,b)=>a.amount-b.amount).slice(0,8);
+// Daily spend
+const daily={};cur.filter(t=>isE(t)).forEach(t=>{daily[t.date]=(daily[t.date]||0)+Math.abs(t.amount)});
+const dates=Object.keys(daily).sort();
+// Weekday
+const wd=[0,0,0,0,0,0,0],wc=[0,0,0,0,0,0,0];cur.filter(t=>isE(t)).forEach(t=>{const d=(new Date(t.date).getDay()+6)%7;wd[d]+=Math.abs(t.amount);wc[d]++});
+const wA=wd.map((v,i)=>wc[i]?Math.round(v/wc[i]):0);
+
+el.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px"><div><h1 style="font-size:22px;font-weight:700;margin-bottom:2px">Dashboard</h1><p style="font-size:12px;color:var(--t3)">${mL(SM)} · ${cur.length} transakcí</p></div><div style="display:flex;gap:9px;align-items:center"><div class="mn" id="d-mn"></div><button class="bt bp" onclick="nav('imp')">Import</button></div></div>
+<div class="kg">
+<div class="cd" style="margin:0"><div style="font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:5px">Příjmy</div><div style="font-size:22px;font-weight:700">${F(inc)} Kč</div>${pc(inc,pI)?`<div style="font-size:10px;margin-top:3px;color:${Number(pc(inc,pI))>=0?'var(--g)':'var(--r)'}">${pc(inc,pI)}%</div>`:''}</div>
+<div class="cd" style="margin:0"><div style="font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:5px">Výdaje</div><div style="font-size:22px;font-weight:700;color:var(--r)">${F(netExp)} Kč</div><div style="font-size:10px;color:var(--t3);margin-top:3px">${F(dAvg)} Kč/den${vyr?` · -${F(vyr)} vyrovnání`:''}</div></div>
+<div class="cd" style="margin:0"><div style="font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:5px">Míra úspor</div><div style="font-size:22px;font-weight:700;color:${sRate>15?'var(--g)':sRate>5?'var(--yl)':'var(--r)'}">${sRate}%</div><div style="font-size:10px;color:var(--t3);margin-top:3px">${dp?F((inc-netExp)/dp):0} Kč/den</div></div>
+<div class="cd" style="margin:0"><div style="font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:5px">Spoření</div><div style="font-size:22px;font-weight:700;color:var(--pu)">${F(sav)} Kč</div></div>
+</div>
+<div class="cd"><h2 style="font-size:13px;font-weight:600;margin-bottom:10px">Cashflow</h2><div class="cb"><canvas id="c1"></canvas></div></div>
+<div style="display:grid;grid-template-columns:300px 1fr;gap:12px">
+<div class="cd"><h2 style="font-size:13px;font-weight:600;margin-bottom:8px">Kategorie</h2><div style="display:flex;justify-content:center"><div style="width:170px;height:170px"><canvas id="c2"></canvas></div></div><div style="margin-top:6px">${cDG.map(c=>c.isGroup?`<div style="padding:2px 0"><div style="display:flex;justify-content:space-between;align-items:center"><div style="display:flex;align-items:center;gap:5px"><i style="width:6px;height:6px;border-radius:50%;background:${c.c};display:inline-block"></i><span style="font-size:11px;color:var(--t1);font-weight:600">${c.n}</span></div><span class="m" style="font-size:11px;font-weight:700">${F(c.total)}</span></div>${c.subs.map(s=>`<div style="display:flex;justify-content:space-between;padding:1px 0 1px 11px;cursor:pointer" onclick="SM='${SM}';nav('tx');document.getElementById('tx-cf').value='${s.id}';rTx()"><span style="font-size:10px;color:var(--t3)">${s.n}</span><span class="m" style="font-size:10px;color:var(--t2)">${F(s.total)}</span></div>`).join('')}</div>`:`<div style="display:flex;justify-content:space-between;padding:2px 0;cursor:pointer" onclick="SM='${SM}';nav('tx');document.getElementById('tx-cf').value='${c.id}';rTx()"><div style="display:flex;align-items:center;gap:5px"><i style="width:6px;height:6px;border-radius:50%;background:${c.c};display:inline-block"></i><span style="font-size:11px;color:var(--t2)">${c.n}</span></div><span class="m" style="font-size:11px;font-weight:600">${F(c.total)}</span></div>`).join('')}</div></div>
+<div class="cd"><h2 style="font-size:13px;font-weight:600;margin-bottom:8px">Top výdaje</h2>${top.length?`<table><thead><tr><th>Datum</th><th>Popis</th><th>Kat.</th><th style="text-align:right">Kč</th></tr></thead><tbody>${top.map(t=>{const c=gc(t.categoryId);return`<tr style="cursor:pointer" onclick="SM='${SM}';nav('tx');document.getElementById('tx-s').value='${(t.description||'').replace(/'/g,'').substring(0,20)}';rTx()"><td class="m" style="font-size:10px;color:var(--t3)">${t.date}</td><td style="font-weight:500">${(t.description||t.counterparty||'—').substring(0,32)}</td><td><span class="ba" style="background:${c.c}18;color:${c.c}"><i style="background:${c.c}"></i>${c.n}</span></td><td class="m" style="text-align:right;font-weight:600;color:var(--r)">-${F(t.amount)}</td></tr>`}).join('')}</tbody></table>`:'<p style="color:var(--t3);text-align:center;padding:16px">—</p>'}</div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+<div class="cd"><h2 style="font-size:13px;font-weight:600;margin-bottom:10px">Denní výdaje</h2><div class="cb"><canvas id="c3"></canvas></div></div>
+<div class="cd"><h2 style="font-size:13px;font-weight:600;margin-bottom:10px">Výdaje dle dne</h2><div class="cb"><canvas id="c4"></canvas></div></div>
+</div>`;
+rMN('d-mn','rDash');dCH();
+CH.c1=new Chart(document.getElementById('c1'),{type:'bar',data:{labels:sM.map(m=>MS[parseInt(m.split('-')[1])-1]),datasets:[{label:'Příjmy',data:sM.map(m=>mo[m]?.i||0),backgroundColor:sM.map(m=>m===SM?'rgba(34,197,94,.85)':'rgba(34,197,94,.4)'),borderRadius:3,barPercentage:.35},{label:'Výdaje',data:sM.map(m=>mo[m]?.e||0),backgroundColor:sM.map(m=>m===SM?'rgba(239,68,68,.85)':'rgba(239,68,68,.4)'),borderRadius:3,barPercentage:.35}]},options:{responsive:true,maintainAspectRatio:false,onClick:(e,el)=>{if(el.length){const i=el[0].index;SM=sM[i];rDash()}},plugins:{legend:{display:false},tooltip:{backgroundColor:'#1a1a2e',bodyColor:'#e5e5ec',borderColor:'rgba(255,255,255,.08)',borderWidth:1,cornerRadius:7,callbacks:{label:x=>x.dataset.label+': '+F(x.raw)+' Kč'}}},scales:{x:{grid:{display:false},ticks:{color:'#4b5563',font:{size:9}}},y:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#4b5563',font:{size:9},callback:v=>v/1000+'k'}}}}});
+if(cDG.length)CH.c2=new Chart(document.getElementById('c2'),{type:'doughnut',data:{labels:cDG.map(c=>c.n),datasets:[{data:cDG.map(c=>c.total),backgroundColor:cDG.map(c=>c.c),borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'58%',onClick:(e,el)=>{if(el.length){const ci=cDG[el[0].index];if(!ci.isGroup){nav('tx');setTimeout(()=>{document.getElementById('tx-cf').value=ci.id;rTx()},50)}}},plugins:{legend:{display:false},tooltip:{backgroundColor:'#1a1a2e',bodyColor:'#e5e5ec',borderColor:'rgba(255,255,255,.08)',borderWidth:1,cornerRadius:7,callbacks:{label:x=>x.label+': '+F(x.raw)+' Kč ('+((x.raw/cTot)*100).toFixed(1)+'%)'}}}}});
+if(dates.length)CH.c3=new Chart(document.getElementById('c3'),{type:'bar',data:{labels:dates.map(d=>d.slice(8)),datasets:[{data:dates.map(d=>daily[d]||0),backgroundColor:dates.map(d=>daily[d]>dAvg*2?'rgba(239,68,68,.65)':daily[d]>dAvg?'rgba(245,158,11,.55)':'rgba(34,197,94,.55)'),borderRadius:3,barPercentage:.6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#1a1a2e',bodyColor:'#e5e5ec',borderColor:'rgba(255,255,255,.08)',borderWidth:1,cornerRadius:7,callbacks:{label:x=>F(x.raw)+' Kč'}}},scales:{x:{grid:{display:false},ticks:{color:'#4b5563',font:{size:8}}},y:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#4b5563',font:{size:9},callback:v=>v/1000+'k'}}}}});
+CH.c4=new Chart(document.getElementById('c4'),{type:'bar',data:{labels:['Po','Út','St','Čt','Pá','So','Ne'],datasets:[{data:wA,backgroundColor:wA.map(v=>v>2000?'rgba(239,68,68,.6)':v>1000?'rgba(245,158,11,.5)':'rgba(34,197,94,.5)'),borderRadius:5,barPercentage:.5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#1a1a2e',bodyColor:'#e5e5ec',borderColor:'rgba(255,255,255,.08)',borderWidth:1,cornerRadius:7,callbacks:{label:x=>'Ø '+F(x.raw)+' Kč'}}},scales:{x:{grid:{display:false},ticks:{color:'#4b5563',font:{size:9}}},y:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#4b5563',font:{size:9}}}}}});
+}
+
+// ═══ YEARLY ═══
+let selYear=null;
+async function rYear(){
+const tx=(await dg('tx')).filter(t=>!t.hidden);
+const yrs=new Set();tx.forEach(t=>{if(t.date)yrs.add(t.date.slice(0,4))});Object.keys(HIST).forEach(y=>yrs.add(y));
+const ys=[...yrs].sort().reverse();if(!ys.length)ys.push(new Date().getFullYear().toString());
+if(!selYear||!ys.includes(selYear))selYear=ys[0];
+const el=document.getElementById('pg-year');
+el.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px"><h1 style="font-size:22px;font-weight:700">Roční přehled</h1><select id="yr-s" onchange="selYear=this.value;rYear()" style="min-width:90px">${ys.map(y=>'<option value="'+y+'"'+(y===selYear?' selected':'')+'>'+y+'</option>').join('')}</select></div><div id="yr-c"></div>`;
+const yr=selYear;
+const md={};tx.filter(t=>t.date?.startsWith(yr)).forEach(t=>{const m=t.date.slice(0,7);if(!md[m])md[m]={i:0,e:0,vyr:0};if(isInc(t))md[m].i+=t.amount;else if(isE(t))md[m].e+=Math.abs(t.amount);else if(isVyr(t))md[m].vyr+=Math.abs(t.amount)});
+if(HIST[yr])for(const[m,d]of Object.entries(HIST[yr]))if(!md[m]||(!md[m].i&&!md[m].e))md[m]={i:d.i,e:d.e,vyr:0,h:true};
+const sm=Object.keys(md).sort();sm.forEach(m=>{md[m].ne=md[m].e-md[m].vyr;md[m].cf=md[m].i-md[m].ne});
+// Category breakdown for the year
+const yrCats={};tx.filter(t=>t.date?.startsWith(yr)&&isE(t)).forEach(t=>{yrCats[t.categoryId]=(yrCats[t.categoryId]||0)+Math.abs(t.amount)});
+const yrCatData=CATS.filter(c=>yrCats[c.id]).map(c=>({...c,total:yrCats[c.id]})).sort((a,b)=>b.total-a.total);
+const yrCatDataG=gCatGroups(yrCatData);
+const yrCatTotal=yrCatDataG.reduce((s,c)=>s+c.total,0);
+const yrIncCats={};tx.filter(t=>t.date?.startsWith(yr)&&isInc(t)).forEach(t=>{const key=t.counterparty||t.description||'Ostatní';yrIncCats[key]=(yrIncCats[key]||0)+t.amount});
+const yrIncData=Object.entries(yrIncCats).map(([n,v])=>({n,v})).sort((a,b)=>b.v-a.v);
+const yrIncTotal=yrIncData.reduce((s,x)=>s+x.v,0);
+// Monthly category data for sparklines
+const yrMonCats={};sm.forEach(m=>{yrMonCats[m]={};tx.filter(t=>t.date?.startsWith(m)&&isE(t)).forEach(t=>{yrMonCats[m][t.categoryId]=(yrMonCats[m][t.categoryId]||0)+Math.abs(t.amount)})});
+const tI=sm.reduce((s,m)=>s+md[m].i,0),tE=sm.reduce((s,m)=>s+md[m].e,0),tNE=sm.reduce((s,m)=>s+md[m].ne,0);
+document.getElementById('yr-c').innerHTML=`
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
+<div class="cd" style="margin:0"><div style="font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:4px">Příjmy</div><div style="font-size:22px;font-weight:700;color:var(--g)">${F(tI)} Kč</div></div>
+<div class="cd" style="margin:0"><div style="font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:4px">Výdaje</div><div style="font-size:22px;font-weight:700;color:var(--r)">${F(tNE)} Kč</div></div>
+<div class="cd" style="margin:0"><div style="font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:4px">Cashflow</div><div style="font-size:22px;font-weight:700;color:${tI-tNE>=0?'var(--g)':'var(--r)'}">${tI-tNE>=0?'+':''}${F(tI-tNE)} Kč</div></div>
+</div>
+<div class="cd"><div class="cb"><canvas id="cy"></canvas></div></div>
+<div class="cd" style="padding:12px 14px"><table><thead><tr><th>Měsíc</th><th style="text-align:right">Příjmy</th><th style="text-align:right">Výdaje</th><th style="text-align:right">CF</th><th style="text-align:right">Ø/den</th><th style="width:30px"></th></tr></thead><tbody>
+${sm.map(m=>{const d=md[m];const days=new Date(m.split('-')[0],m.split('-')[1],0).getDate();return`<tr${SM===m?' style="background:rgba(99,102,241,.05)"':''}><td style="font-weight:600;font-size:13px">${MN[parseInt(m.split('-')[1])-1]}${d.h?' <span class="tg" style="background:rgba(99,102,241,.08);color:var(--ac)">hist</span>':''}</td><td class="m" style="text-align:right;color:var(--g)">${F(d.i)}</td><td class="m" style="text-align:right;color:var(--r)">${F(d.ne)}</td><td class="m" style="text-align:right;font-weight:600;color:${d.cf>=0?'var(--g)':'var(--r)'}">${d.cf>=0?'+':'−'}${F(d.cf)}</td><td class="m" style="text-align:right;color:var(--t3)">${F(d.ne/days)}</td><td>${d.h?'':'<a style="color:var(--ac);cursor:pointer;font-size:10px" onclick="SM=\''+m+'\';nav(\'dash\')">→</a>'}</td></tr>`}).join('')}
+<tr style="border-top:2px solid var(--brd)"><td style="font-weight:700;font-size:13px">CELKEM</td><td class="m" style="text-align:right;color:var(--g);font-weight:700">${F(tI)}</td><td class="m" style="text-align:right;color:var(--r);font-weight:700">${F(tNE)}</td><td class="m" style="text-align:right;font-weight:700;color:${tI-tNE>=0?'var(--g)':'var(--r)'}">${tI-tNE>=0?'+':'−'}${F(tI-tNE)}</td><td class="m" style="text-align:right;color:var(--t3)">${F(tNE/(sm.length||1)/30)}</td><td></td></tr>
+</tbody></table></div>
+${yrCatDataG.length?`<div class="cd" style="padding:12px 14px"><h2 style="font-size:13px;font-weight:600;margin-bottom:10px">Výdaje dle kategorií — ${yr}</h2>
+<div style="display:grid;grid-template-columns:300px 1fr;gap:14px">
+<div><div style="width:200px;height:200px;margin:0 auto"><canvas id="cyc"></canvas></div></div>
+<div><table><thead><tr><th>Kategorie</th><th style="text-align:right">Celkem</th><th style="text-align:right">Měsíčně Ø</th><th style="text-align:right">Podíl</th></tr></thead><tbody>
+${yrCatDataG.flatMap(c=>{const pct=yrCatTotal?(c.total/yrCatTotal*100).toFixed(1):'0';const avg=sm.length?c.total/sm.length:0;if(c.isGroup){const subRows=c.subs.map(s=>{const sa=sm.length?s.total/sm.length:0;const sp=yrCatTotal?(s.total/yrCatTotal*100).toFixed(1):'0';return`<tr><td style="padding-left:18px"><span class="ba" style="background:${s.c}18;color:${s.c};font-size:9.5px"><i style="background:${s.c}"></i>${s.n}</span></td><td class="m" style="text-align:right;font-size:11px">${F(s.total)} Kč</td><td class="m" style="text-align:right;color:var(--t3);font-size:11px">${F(sa)} Kč</td><td class="m" style="text-align:right;color:var(--t3);font-size:11px">${sp}%</td></tr>`});return[`<tr style="background:rgba(255,255,255,.015)"><td><div style="display:flex;align-items:center;gap:5px"><i style="width:7px;height:7px;border-radius:50%;background:${c.c};display:inline-block"></i><span style="font-weight:700">${c.n}</span></div></td><td class="m" style="text-align:right;font-weight:700">${F(c.total)} Kč</td><td class="m" style="text-align:right;color:var(--t3)">${F(avg)} Kč</td><td class="m" style="text-align:right;color:var(--t3)">${pct}%</td></tr>`,...subRows]}return[`<tr><td><span class="ba" style="background:${c.c}18;color:${c.c}"><i style="background:${c.c}"></i>${c.n}</span></td><td class="m" style="text-align:right;font-weight:600">${F(c.total)} Kč</td><td class="m" style="text-align:right;color:var(--t3)">${F(avg)} Kč</td><td class="m" style="text-align:right;color:var(--t3)">${pct}%</td></tr>`]}).join('')}
+<tr style="border-top:2px solid var(--brd)"><td style="font-weight:700">Celkem výdaje</td><td class="m" style="text-align:right;font-weight:700;color:var(--r)">${F(yrCatTotal)} Kč</td><td class="m" style="text-align:right;color:var(--t3)">${F(yrCatTotal/(sm.length||1))} Kč</td><td></td></tr>
+</tbody></table></div></div></div>`:''}
+${yrIncData.length?`<div class="cd" style="padding:12px 14px"><h2 style="font-size:13px;font-weight:600;margin-bottom:10px">Příjmy dle zdroje — ${yr}</h2>
+<table><thead><tr><th>Zdroj</th><th style="text-align:right">Celkem</th><th style="text-align:right">Měsíčně Ø</th><th style="text-align:right">Podíl</th></tr></thead><tbody>
+${yrIncData.map(x=>{const pct=yrIncTotal?(x.v/yrIncTotal*100).toFixed(1):'0';return`<tr><td style="font-weight:500">${x.n.substring(0,40)}</td><td class="m" style="text-align:right;font-weight:600;color:var(--g)">${F(x.v)} Kč</td><td class="m" style="text-align:right;color:var(--t3)">${F(x.v/(sm.length||1))} Kč</td><td class="m" style="text-align:right;color:var(--t3)">${pct}%</td></tr>`}).join('')}
+<tr style="border-top:2px solid var(--brd)"><td style="font-weight:700">Celkem příjmy</td><td class="m" style="text-align:right;font-weight:700;color:var(--g)">${F(yrIncTotal)} Kč</td><td class="m" style="text-align:right;color:var(--t3)">${F(yrIncTotal/(sm.length||1))} Kč</td><td></td></tr>
+</tbody></table></div>`:''}`;
+dCH();CH.cy=new Chart(document.getElementById('cy'),{type:'bar',data:{labels:sm.map(m=>MS[parseInt(m.split('-')[1])-1]),datasets:[{label:'Příjmy',data:sm.map(m=>md[m].i),backgroundColor:'rgba(34,197,94,.55)',borderRadius:3,barPercentage:.32},{label:'Výdaje',data:sm.map(m=>md[m].ne),backgroundColor:'rgba(239,68,68,.55)',borderRadius:3,barPercentage:.32}]},options:{responsive:true,maintainAspectRatio:false,onClick:(e,el)=>{if(el.length){SM=sm[el[0].index];nav('dash')}},plugins:{legend:{labels:{color:'#6b7280',font:{size:10}}},tooltip:{backgroundColor:'#1a1a2e',bodyColor:'#e5e5ec',borderColor:'rgba(255,255,255,.08)',borderWidth:1,cornerRadius:7,callbacks:{label:x=>x.dataset.label+': '+F(x.raw)+' Kč'}}},scales:{x:{grid:{display:false},ticks:{color:'#4b5563',font:{size:9}}},y:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#4b5563',font:{size:9},callback:v=>v/1000+'k'}}}}});
+
+if(yrCatDataG.length&&document.getElementById('cyc'))CH.cyc=new Chart(document.getElementById('cyc'),{type:'doughnut',data:{labels:yrCatDataG.map(c=>c.n),datasets:[{data:yrCatDataG.map(c=>c.total),backgroundColor:yrCatDataG.map(c=>c.c),borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{display:false},tooltip:{backgroundColor:'#1a1a2e',bodyColor:'#e5e5ec',borderColor:'rgba(255,255,255,.08)',borderWidth:1,cornerRadius:7,callbacks:{label:x=>x.label+': '+F(x.raw)+' Kč'}}}}});
+}
+
+// ═══ TRANSACTIONS ═══
+let TP=0;const PP=35;
+let txSel=new Set();
+let txSort='date';
+async function rTx(){
+let tx=(await dg('tx')).filter(t=>!t.hidden);
+const el=document.getElementById('pg-tx');
+if(!document.getElementById('tx-s')){el.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px"><div><h1 style="font-size:22px;font-weight:700;margin-bottom:2px">Transakce</h1><p style="font-size:12px;color:var(--t3)" id="tx-n"></p></div><div id="tx-act" style="display:flex;gap:6px"></div></div>
+<div style="display:flex;gap:7px;margin-bottom:12px;flex-wrap:wrap">
+<div style="flex:1;min-width:160px;display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.03);border:1px solid var(--brd);border-radius:8px;padding:0 10px"><input id="tx-s" type="text" placeholder="Hledat..." style="flex:1;border:none;background:transparent;padding:6px 0" oninput="rTx()"></div>
+<select id="tx-cf" onchange="rTx()" style="min-width:110px">${catSelectHTML()}</select>
+<select id="tx-bf" onchange="rTx()" style="min-width:100px"><option value="">Banka</option><option value="Moneta Money Bank">Moneta</option><option value="Raiffeisenbank">Raiffeisen</option></select>
+<input type="date" id="tx-df" onchange="rTx()" style="min-width:120px" title="Od">
+<input type="date" id="tx-dt" onchange="rTx()" style="min-width:120px" title="Do">
+<select id="tx-so" onchange="txSort=this.value;rTx()" style="min-width:100px"><option value="date">Dle data</option><option value="amount">Dle částky ↓</option><option value="amount_asc">Dle částky ↑</option></select>
+</div>
+<div class="cd" style="padding:12px 14px"><div id="tx-tb"></div><div id="tx-pg" style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--brd)"></div></div>`}
+const se=N(document.getElementById('tx-s')?.value||'');const cf=document.getElementById('tx-cf')?.value;const bf=document.getElementById('tx-bf')?.value;
+const df=document.getElementById('tx-df')?.value;const dt=document.getElementById('tx-dt')?.value;
+if(se)tx=tx.filter(t=>N(t.description+' '+t.counterparty).includes(se));
+if(cf)tx=tx.filter(t=>t.categoryId===parseInt(cf));
+if(bf)tx=tx.filter(t=>t.bankName===bf);
+if(df)tx=tx.filter(t=>t.date>=df);
+if(dt)tx=tx.filter(t=>t.date<=dt);
+if(txSort==='amount')tx.sort((a,b)=>a.amount-b.amount);
+else if(txSort==='amount_asc')tx.sort((a,b)=>b.amount-a.amount);
+else tx.sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.id-a.id);
+document.getElementById('tx-n').textContent=tx.length+' transakcí';
+const actEl=document.getElementById('tx-act');
+if(actEl)actEl.innerHTML=txSel.size?`<span style="font-size:11px;color:var(--ac);font-weight:600">${txSel.size} vybráno</span><button class="bt bp bs" onclick="billSelected()">Vyúčtovat</button><button class="bt bg bs" onclick="txSel.clear();rTx()">Zrušit</button>`:'';
+const tot=tx.length,tp=Math.ceil(tot/PP);TP=Math.min(TP,Math.max(0,tp-1));const sl=tx.slice(TP*PP,(TP+1)*PP);
+document.getElementById('tx-tb').innerHTML=sl.length?`<table><thead><tr><th style="width:28px"><input type="checkbox" onchange="toggleAllTx(this.checked,[${sl.map(t=>t.id).join(',')}])"></th><th style="width:65px">Datum</th><th>Popis</th><th style="width:90px">Kat.</th><th style="width:50px">Bk</th><th style="width:80px;text-align:right">Kč</th><th style="width:26px"></th></tr></thead><tbody>${sl.map(t=>{const c=gc(t.categoryId);const desc=[t.description,t.counterparty].filter(Boolean).join(' · ');return`<tr${txSel.has(t.id)?' style="background:rgba(124,92,252,.06)"':''}><td><input type="checkbox" ${txSel.has(t.id)?'checked':''} onchange="toggleTxSel(${t.id},this.checked)"></td><td class="m" style="font-size:10px;color:var(--t3)">${t.date}</td><td style="font-weight:500;font-size:11.5px" title="${(desc).replace(/"/g,'&quot;')}">${desc||'—'}</td><td style="position:relative"><span class="ba" style="background:${c.c}18;color:${c.c}" onclick="showDD(event,${t.id},${t.categoryId})"><i style="background:${c.c}"></i>${c.n}</span></td><td><span class="tg" style="background:${t.bankName==='Moneta Money Bank'?'rgba(34,197,94,.08);color:var(--g)':'rgba(59,130,246,.08);color:var(--bl)'}">${t.bankName==='Moneta Money Bank'?'M':'R'}</span></td><td class="m" style="text-align:right;font-weight:600;color:${t.amount>=0?'var(--g)':t.categoryId===12?'var(--pu)':'var(--t1)'}">${t.amount>=0?'+':''}${new Intl.NumberFormat('cs-CZ').format(Math.round(t.amount))}</td><td><button style="background:none;border:none;cursor:pointer;font-size:9px;color:var(--t3)" onclick="toggleH(${t.id},true)">×</button></td></tr>`}).join('')}</tbody></table>`:'<p style="color:var(--t3);text-align:center;padding:24px;font-size:11px">Žádné transakce</p>';
+document.getElementById('tx-pg').innerHTML=tot>PP?`<span style="font-size:10px;color:var(--t3)">${TP*PP+1}–${Math.min((TP+1)*PP,tot)} z ${tot}</span><div style="display:flex;gap:3px"><button class="bt bg bs" onclick="TP=Math.max(0,TP-1);rTx()" ${TP===0?'disabled style="opacity:.3"':''}>‹</button><button class="bt bg bs" onclick="TP=Math.min(${tp-1},TP+1);rTx()" ${TP>=tp-1?'disabled style="opacity:.3"':''}>›</button></div>`:'';
+}
+function toggleTxSel(id,on){if(on)txSel.add(id);else txSel.delete(id);rTx()}
+function toggleAllTx(on,ids){ids.forEach(id=>{if(on)txSel.add(id);else txSel.delete(id)});rTx()}
+async function billSelected(){
+if(!txSel.size)return;
+const persons=await gs('billPersons')||['Rodiče','Majda'];
+const name=prompt('Komu vyúčtovat? ('+persons.join(', ')+')');
+if(!name)return;
+if(!persons.includes(name)){persons.push(name);await ss('billPersons',persons)}
+const tx=await dg('tx');const items=[];
+for(const id of txSel){const t=tx.find(x=>x.id===id);if(t)items.push({txId:t.id,date:t.date,desc:t.description,cp:t.counterparty,amount:t.amount,cat:gc(t.categoryId).n})}
+await da('imp',{type:'bill',person:name,date:new Date().toISOString(),items,total:items.reduce((s,x)=>s+Math.abs(x.amount),0),paid:false});
+txSel.clear();rTx();
+alert('Vyúčtování pro '+name+': '+items.length+' položek ('+F(items.reduce((s,x)=>s+Math.abs(x.amount),0))+' Kč)');
+}
+function showDD(e,id,cur){e.stopPropagation();document.querySelectorAll('.dd').forEach(d=>d.remove());const dd=document.createElement('div');dd.className='dd';dd.innerHTML=CATS.map(c=>`<button class="${c.id===cur?'sl':''}" onclick="uCat(${id},${c.id});this.parentElement.remove()"><i style="width:6px;height:6px;border-radius:50%;background:${c.c};display:inline-block"></i>${c.n}</button>`).join('');e.target.closest('td').appendChild(dd);setTimeout(()=>document.addEventListener('click',function cl(){dd.remove();document.removeEventListener('click',cl)}),10)}
+async function uCat(id,cid){const tx=await dg('tx');const t=tx.find(x=>x.id===id);if(!t)return;t.categoryId=cid;t.autoCategory=false;await dp('tx',t);rTx();dCH()}
+async function toggleH(id,h){const tx=await dg('tx');const t=tx.find(x=>x.id===id);if(!t)return;t.hidden=h;await dp('tx',t);rTx();dCH()}
+
+// ═══ IMPORT ═══
+let cF=null,sB='Moneta Money Bank';
+async function rImp(){
+const el=document.getElementById('pg-imp');
+const imps=await dg('imp');imps.sort((a,b)=>new Date(b.date)-new Date(a.date));
+const mOn=sB==='Moneta Money Bank';
+el.innerHTML=`<div style="margin-bottom:18px"><h1 style="font-size:22px;font-weight:700;margin-bottom:2px">Import</h1></div><div id="ia"></div>
+<div class="cd"><label style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:1px;font-weight:600;display:block;margin-bottom:7px">Banka</label>
+<div style="display:flex;gap:7px;margin-bottom:14px"><button class="bt" id="bb1" data-b="Moneta Money Bank" onclick="selB(this)" style="border:1px solid ${mOn?'rgba(34,197,94,.3)':'var(--brd)'};background:${mOn?'rgba(34,197,94,.08)':'transparent'};color:${mOn?'var(--g)':'var(--t3)'}">Moneta</button><button class="bt" id="bb2" data-b="Raiffeisenbank" onclick="selB(this)" style="border:1px solid ${!mOn?'rgba(59,130,246,.3)':'var(--brd)'};background:${!mOn?'rgba(59,130,246,.08)':'transparent'};color:${!mOn?'var(--bl)':'var(--t3)'}">Raiffeisen</button></div>
+<div class="dz" id="dz" ondragover="event.preventDefault();this.classList.add('active')" ondragleave="this.classList.remove('active')" ondrop="hDrop(event)" onclick="document.getElementById('fi').click()"><p style="font-size:13px;color:var(--t2)">Přetáhněte CSV sem nebo klikněte</p></div>
+<input type="file" id="fi" accept=".csv" style="display:none" onchange="hFile(this.files[0])">
+<div id="fI" style="display:none;margin-top:12px;align-items:center;justify-content:space-between"><div><span id="fn" style="font-size:12px;font-weight:500"></span> <span id="fz" style="font-size:10px;color:var(--t3)"></span></div><div style="display:flex;gap:5px"><button class="bt bg bs" onclick="clF()">Zrušit</button><button class="bt bp bs" id="ib" onclick="goImp()">Importovat</button></div></div>
+</div>
+<div class="cd"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><h2 style="font-size:13px;font-weight:600">Historie</h2><button class="bt bg bs" onclick="redetectTransfers()">Předetekovat převody</button></div>
+${imps.length?`<table><thead><tr><th>Banka</th><th>Soubor</th><th>Nových</th><th>Datum</th><th></th></tr></thead><tbody>${imps.map(i=>`<tr><td><span class="tg" style="background:${i.bankName==='Moneta Money Bank'?'rgba(34,197,94,.08);color:var(--g)':'rgba(59,130,246,.08);color:var(--bl)'}">${ i.bankName==='Moneta Money Bank'?'Moneta':'Raiff.'}</span></td><td>${i.filename}</td><td class="m" style="color:var(--g)">${i.inserted}</td><td style="font-size:10px;color:var(--t3)">${new Date(i.date).toLocaleDateString('cs-CZ',{day:'numeric',month:'short'})}</td><td><button class="bt bd bs" onclick="delImp(${i.id},${i.impId})">Smazat</button></td></tr>`).join('')}</tbody></table>`:'<p style="color:var(--t3);text-align:center;padding:16px;font-size:11px">Žádné importy</p>'}</div>`}
+function selB(b){document.querySelectorAll('[data-b]').forEach(x=>{x.style.border='1px solid var(--brd)';x.style.background='transparent';x.style.color='var(--t3)'});sB=b.dataset.b;const m=sB==='Moneta Money Bank';b.style.border='1px solid '+(m?'rgba(34,197,94,.3)':'rgba(59,130,246,.3)');b.style.background=m?'rgba(34,197,94,.08)':'rgba(59,130,246,.08)';b.style.color=m?'var(--g)':'var(--bl)'}
+function hDrop(e){e.preventDefault();document.getElementById('dz').classList.remove('active');if(e.dataTransfer?.files?.[0])hFile(e.dataTransfer.files[0])}
+function hFile(f){if(!f)return;cF=f;document.getElementById('fI').style.display='flex';document.getElementById('fn').textContent=f.name;document.getElementById('fz').textContent=(f.size/1024).toFixed(1)+' KB'}
+function clF(){cF=null;document.getElementById('fI').style.display='none';document.getElementById('fi').value=''}
+async function goImp(){if(!cF)return;const b=document.getElementById('ib');b.disabled=true;b.textContent='...';try{const t=await cF.text();const r=await doImp(t,sB,cF.name);const txAll=await dg('tx');const transfers=txAll.filter(x=>x.categoryId===13).length;document.getElementById('ia').innerHTML='<div class="al al-s an">Nových: <strong style="color:var(--g)">'+r.inserted+'</strong> · Duplicit: '+r.skipped+' · Převodů detekováno: '+transfers+'</div>';clF();rImp()}catch(e){document.getElementById('ia').innerHTML='<div class="al al-e an">'+e.message+'</div>'}b.disabled=false;b.textContent='Importovat'}
+async function delImp(id,impId){if(!confirm('Smazat tento import a všechny jeho transakce?'))return;const tx=await dg('tx');for(const t of tx){if(t.impId===impId)await dd('tx',t.id)}await dd('imp',id);rImp()}
+
+async function redetectTransfers(){
+const tx=await dg('tx');let marked=0;
+// Pass 1: detect by account number and description patterns
+for(const t of tx){
+  if(t.categoryId===13||t.categoryId===12||t.categoryId===7)continue;
+  if(detectTransfer(t.bankName,t.cpAcct||'',t.description||'',t.counterparty||'')){
+    t.categoryId=13;t.autoCategory=true;await dp('tx',t);marked++;
+  }
+}
+// Pass 2: detect matching pairs
+await detectTransferPairs();
+const tx2=await dg('tx');const transfers=tx2.filter(x=>x.categoryId===13).length;
+document.getElementById('ia').innerHTML='<div class="al al-s an">Označeno <strong>'+transfers+'</strong> transakcí jako převod (nově: '+marked+')</div>';
+dCH();
+}
+
+// ═══ INVESTMENTS ═══
+async function rInv(){
+let inv=await dg('inv');
+// Auto-migrate old types
+for(const x of inv){if(x.type==='etf'||x.type==='savings'){x.type='simple';if(!x.invested)x.invested=0;if(!x.currentValue)x.currentValue=x.balance||0;await dp('inv',x)}}
+if(!inv.length){const def=[{name:'Bitcoin (BTC)',type:'crypto',color:'#f7931a',purchases:[],currentPriceUSD:0},{name:'Solana (SOL)',type:'crypto',color:'#9945ff',purchases:[],currentPriceUSD:0},{name:'S&P 500 ETF',type:'simple',color:'#22c55e',invested:0,currentValue:0},{name:'Spořicí účet',type:'simple',color:'#a78bfa',invested:0,currentValue:0}];for(const d of def)await da('inv',d);inv=await dg('inv')}
+let rate=await gs('usdczk')||25;
+let tV=0,tI=0;inv.forEach(x=>{if(x.type==='simple'){tV+=(x.currentValue||0);tI+=(x.invested||0)}else{const p=x.purchases||[];const iUSD=p.reduce((s,v)=>s+(v.usd||0),0);const iCZK=p.reduce((s,v)=>s+(v.usd||0)*(v.rate||rate),0);let vUSD=0;if(x.type==='crypto'){const tc=p.reduce((s,v)=>s+(v.coins||0),0);vUSD=tc*(x.currentPriceUSD||0)}else vUSD=x.currentValueUSD||iUSD;tV+=vUSD*rate;tI+=iCZK}});
+const pl=tV-tI;const el=document.getElementById('pg-inv');
+el.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px"><h1 style="font-size:22px;font-weight:700">Investice</h1></div>
+<div class="cd" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span style="font-size:11px;color:var(--t3)">Kurz USD/CZK:</span><input type="number" step="0.01" value="${rate}" style="width:80px" id="rate-i" onchange="chRate(this.value)"><span style="font-size:10px;color:var(--t3)">Pro přepočet všech investic</span></div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
+<div class="cd" style="margin:0"><div style="font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:4px">Hodnota</div><div style="font-size:22px;font-weight:700">${F(tV)} Kč</div></div>
+<div class="cd" style="margin:0"><div style="font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:4px">Investováno</div><div style="font-size:22px;font-weight:700">${F(tI)} Kč</div></div>
+<div class="cd" style="margin:0"><div style="font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:4px">P/L</div><div style="font-size:22px;font-weight:700;color:${pl>=0?'var(--g)':'var(--r)'}">${pl>=0?'+':''}${F(pl)} Kč</div></div>
+</div>
+${inv.map(x=>{
+if(x.type==='simple'){const spl=x.currentValue-x.invested;return`<div class="cd"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div style="display:flex;align-items:center;gap:7px"><div style="width:28px;height:28px;border-radius:7px;background:${x.color}20;display:flex;align-items:center;justify-content:center"><div style="width:10px;height:10px;border-radius:50%;background:${x.color}"></div></div><span style="font-size:13px;font-weight:600">${x.name}</span></div>${x.invested?`<span style="font-size:13px;font-weight:600;color:${spl>=0?'var(--g)':'var(--r)'}">${spl>=0?'+':''}${F(spl)} Kč</span>`:''}</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:5px"><div><label style="font-size:9px;color:var(--t3)">Investováno (Kč)</label><input class="ii" type="number" value="${x.invested||''}" onchange="uIF(${x.id},'invested',this.value)"></div><div><label style="font-size:9px;color:var(--t3)">Aktuální hodnota (Kč)</label><input class="ii" type="number" value="${x.currentValue||''}" onchange="uIF(${x.id},'currentValue',this.value)"></div></div></div>`}
+const p=x.purchases||[];const iUSD=p.reduce((s,v)=>s+(v.usd||0),0);const iCZK=p.reduce((s,v)=>s+(v.usd||0)*(v.rate||rate),0);
+let vUSD=0;if(x.type==='crypto'){const tc=p.reduce((s,v)=>s+(v.coins||0),0);vUSD=tc*(x.currentPriceUSD||0)}else vUSD=x.currentValueUSD||iUSD;
+const vCZK=vUSD*rate;const ipl=vCZK-iCZK;
+return`<div class="cd"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div style="display:flex;align-items:center;gap:7px"><div style="width:28px;height:28px;border-radius:7px;background:${x.color}20;display:flex;align-items:center;justify-content:center"><div style="width:10px;height:10px;border-radius:50%;background:${x.color}"></div></div><div><div style="font-size:13px;font-weight:600">${x.name}</div><div style="font-size:9px;color:var(--t3)">${x.type==='crypto'?p.reduce((s,v)=>s+(v.coins||0),0).toFixed(4)+' coins':'$'+F(iUSD)+' invested'}</div></div></div><div style="text-align:right"><div style="font-size:15px;font-weight:700;color:${ipl>=0?'var(--g)':'var(--r)'}">${F(vCZK)} Kč</div><div style="font-size:10px;color:${ipl>=0?'var(--g)':'var(--r)'}">${ipl>=0?'+':''}${F(ipl)} Kč</div></div></div>
+<div style="font-size:9px;color:var(--t3);margin-bottom:6px">Invest: $${F(iUSD)} (${F(iCZK)} Kč) · Měnový efekt: ${iUSD?F(iUSD*(rate-(p.length?p.reduce((s,v)=>s+(v.rate||rate),0)/p.length:rate)))+' Kč':''}</div>
+${x.type==='crypto'?`<div style="margin-bottom:6px"><label style="font-size:9px;color:var(--t3)">Aktuální cena USD</label><input class="ii" type="number" step="any" value="${x.currentPriceUSD||''}" onchange="uIF(${x.id},'currentPriceUSD',this.value)"></div>`:`<div style="margin-bottom:6px"><label style="font-size:9px;color:var(--t3)">Aktuální hodnota USD</label><input class="ii" type="number" step="any" value="${x.currentValueUSD||''}" onchange="uIF(${x.id},'currentValueUSD',this.value)"></div>`}
+${p.length?`<table style="font-size:10px;margin-bottom:4px"><thead><tr><th>Datum</th>${x.type==='crypto'?'<th>Coins</th>':''}<th>USD</th><th>Kurz</th><th>CZK</th><th></th></tr></thead><tbody>${p.map((v,j)=>`<tr><td>${v.date||''}</td>${x.type==='crypto'?'<td class="m">'+v.coins+'</td>':''}<td class="m">$${F(v.usd||0)}</td><td class="m">${(v.rate||rate).toFixed(1)}</td><td class="m">${F((v.usd||0)*(v.rate||rate))}</td><td><button style="background:none;border:none;cursor:pointer;color:var(--r);font-size:9px" onclick="rmP(${x.id},${j})">×</button></td></tr>`).join('')}</tbody></table>`:''}
+<button class="bt bg bs" onclick="addP(${x.id},'${x.type}')">+ Nákup</button>
+</div>`}).join('')}
+<div style="margin-top:12px;text-align:center"><button class="bt bg" onclick="addIA()">+ Přidat investici</button></div>`;
+}
+async function chRate(v){const r=parseFloat(v)||25;await ss('usdczk',r);rInv()}
+async function uIF(id,f,v){const inv=await dg('inv');const x=inv.find(i=>i.id===id);if(!x)return;x[f]=parseFloat(v)||0;await dp('inv',x);rInv()}
+async function addP(id,type){const d=prompt('Datum (DD.MM.YYYY):');if(!d)return;const inv=await dg('inv');const x=inv.find(i=>i.id===id);if(!x)return;if(!x.purchases)x.purchases=[];const coins=type==='crypto'?parseFloat(prompt('Počet coinů:'))||0:0;const usd=parseFloat(prompt('Částka USD:'))||0;const rate=parseFloat(prompt('Kurz USD/CZK:'))||25;x.purchases.push({date:d,coins,usd,rate});await dp('inv',x);rInv()}
+async function rmP(id,j){if(!confirm('Smazat?'))return;const inv=await dg('inv');const x=inv.find(i=>i.id===id);if(!x?.purchases)return;x.purchases.splice(j,1);await dp('inv',x);rInv()}
+async function addIA(){const n=prompt('Název:');if(!n)return;const t=prompt('Typ (crypto/etf/savings):','crypto');await da('inv',{name:n,type:t||'crypto',color:'#6b7280',purchases:[],currentPriceUSD:0,currentValueUSD:0,balance:0,interestRate:0});rInv()}
+
+// ═══ WEALTH (SNAPSHOTS) ═══
+async function rWealth(){
+const inv=await dg('inv');let rate=await gs('usdczk')||25;
+// Build breakdown
+const breakdown=[];
+const w=await gs('wealth')||{moneta:0,raiffeisen:0,hotovost:0};
+breakdown.push({name:'Moneta — běžný',value:w.moneta||0,color:'var(--g)'});
+breakdown.push({name:'Raiffeisen — běžný',value:w.raiffeisen||0,color:'var(--bl)'});
+breakdown.push({name:'Hotovost',value:w.hotovost||0,color:'var(--t2)'});
+inv.forEach(x=>{let v=0;if(x.type==='simple')v=x.currentValue||0;else if(x.type==='crypto')v=(x.purchases||[]).reduce((s,z)=>s+(z.coins||0),0)*(x.currentPriceUSD||0)*rate;else v=(x.currentValueUSD||0)*rate;breakdown.push({name:x.name,value:v,color:x.color})});
+const total=breakdown.reduce((s,b)=>s+b.value,0);
+const acctTotal=(w.moneta||0)+(w.raiffeisen||0)+(w.hotovost||0);
+const invTot=total-acctTotal;
+const snaps=(await dg('snap')).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+const el=document.getElementById('pg-wealth');
+el.innerHTML=`<div style="margin-bottom:18px"><h1 style="font-size:22px;font-weight:700;margin-bottom:2px">Celkové jmění</h1></div>
+<div class="cd" style="text-align:center;padding:18px"><div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:1.5px;font-weight:600;margin-bottom:6px">Celkové jmění</div><div style="font-size:38px;font-weight:700;letter-spacing:-1px">${F(total)} Kč</div>
+<button class="bt bp bs" style="margin-top:10px" onclick="saveSnap()">Uložit snapshot</button></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+<div class="cd"><h2 style="font-size:13px;font-weight:600;margin-bottom:10px">Účty + hotovost</h2>
+<div style="margin-bottom:8px"><label style="font-size:9px;color:var(--t3)">Moneta (Kč)</label><input class="ii" type="number" value="${w.moneta||''}" onchange="uW('moneta',this.value)"></div>
+<div style="margin-bottom:8px"><label style="font-size:9px;color:var(--t3)">Raiffeisenbank (Kč)</label><input class="ii" type="number" value="${w.raiffeisen||''}" onchange="uW('raiffeisen',this.value)"></div>
+<div style="margin-bottom:8px"><label style="font-size:9px;color:var(--t3)">Hotovost (Kč)</label><input class="ii" type="number" value="${w.hotovost||''}" onchange="uW('hotovost',this.value)"></div>
+<div style="display:flex;justify-content:space-between;padding:8px 0;border-top:1px solid var(--brd);margin-top:6px"><span style="font-weight:600;font-size:12px">Subtotal</span><span class="m" style="font-weight:700">${F(acctTotal)} Kč</span></div></div>
+<div class="cd"><h2 style="font-size:13px;font-weight:600;margin-bottom:10px">Investice</h2>
+${inv.map(x=>{let v=0;if(x.type==='simple')v=x.currentValue||0;else if(x.type==='crypto')v=(x.purchases||[]).reduce((s,z)=>s+(z.coins||0),0)*(x.currentPriceUSD||0)*rate;else v=(x.currentValueUSD||0)*rate;return`<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px"><span style="color:var(--t2)">${x.name}</span><span class="m" style="font-weight:600">${F(v)} Kč</span></div>`}).join('')}
+<div style="display:flex;justify-content:space-between;padding:8px 0;border-top:1px solid var(--brd);margin-top:6px"><span style="font-weight:600;font-size:12px">Subtotal</span><span class="m" style="font-weight:700">${F(invTot)} Kč</span></div></div>
+</div>
+${snaps.length?`<div class="cd"><h2 style="font-size:13px;font-weight:600;margin-bottom:10px">Vývoj jmění</h2>
+${snaps.length>1?'<div class="cb"><canvas id="cw"></canvas></div>':''}
+<table style="margin-top:10px"><thead><tr><th>Datum</th><th style="text-align:right">Jmění</th><th style="text-align:right">Změna</th><th></th><th></th></tr></thead><tbody>${snaps.map((s,i)=>{const prev=i>0?snaps[i-1].value:s.value;const ch=s.value-prev;return`<tr><td style="font-size:11px">${s.date}</td><td class="m" style="text-align:right;font-weight:600">${F(s.value)} Kč</td><td class="m" style="text-align:right;color:${ch>=0?'var(--g)':'var(--r)'}">${ch>=0?'+':''}${F(ch)}</td><td><button class="bt bg bs" style="font-size:9px" onclick="showSnapDetail(${s.id})">Detail</button></td><td><button style="background:none;border:none;cursor:pointer;color:var(--r);font-size:9px" onclick="delSnap(${s.id})">×</button></td></tr><tr id="snap-d-${s.id}" style="display:none"><td colspan="5" style="padding:8px 12px;background:rgba(99,102,241,.03);border-radius:8px"><div id="snap-dd-${s.id}"></div></td></tr>`}).join('')}</tbody></table></div>`:''}`;
+if(snaps.length>1){dCH();CH.cw=new Chart(document.getElementById('cw'),{type:'line',data:{labels:snaps.map(s=>s.date),datasets:[{data:snaps.map(s=>s.value),borderColor:'#6366f1',backgroundColor:'rgba(99,102,241,.1)',fill:true,tension:.3,pointRadius:4,pointBackgroundColor:'#6366f1'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#1a1a2e',bodyColor:'#e5e5ec',borderColor:'rgba(255,255,255,.08)',borderWidth:1,cornerRadius:7,callbacks:{label:x=>F(x.raw)+' Kč'}}},scales:{x:{grid:{display:false},ticks:{color:'#4b5563',font:{size:9}}},y:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#4b5563',font:{size:9},callback:v=>v/1000+'k'}}}}})}
+}
+async function uW(k,v){const w=await gs('wealth')||{moneta:0,raiffeisen:0,hotovost:0};w[k]=parseFloat(v)||0;await ss('wealth',w);rWealth()}
+async function saveSnap(){
+  const inv=await dg('inv');let rate=await gs('usdczk')||25;
+  const w=await gs('wealth')||{moneta:0,raiffeisen:0,hotovost:0};
+  const detail=[];
+  detail.push({name:'Moneta',value:w.moneta||0});
+  detail.push({name:'Raiffeisen',value:w.raiffeisen||0});
+  detail.push({name:'Hotovost',value:w.hotovost||0});
+  inv.forEach(x=>{let v=0;if(x.type==='simple')v=x.currentValue||0;else if(x.type==='crypto')v=(x.purchases||[]).reduce((s,z)=>s+(z.coins||0),0)*(x.currentPriceUSD||0)*rate;else v=(x.currentValueUSD||0)*rate;detail.push({name:x.name,value:Math.round(v)})});
+  const total=detail.reduce((s,d)=>s+d.value,0);
+  await da('snap',{date:new Date().toLocaleDateString('cs-CZ'),value:total,detail,rate});
+  rWealth();
+}
+function showSnapDetail(id){
+  const row=document.getElementById('snap-d-'+id);
+  const dd=document.getElementById('snap-dd-'+id);
+  if(row.style.display==='none'){
+    row.style.display='table-row';
+    dg('snap').then(snaps=>{
+      const s=snaps.find(x=>x.id===id);
+      if(!s?.detail){dd.innerHTML='<p style="font-size:11px;color:var(--t3)">Starý snapshot bez detailu</p>';return}
+      dd.innerHTML='<div style="font-size:11px">'+s.detail.map(d=>'<div style="display:flex;justify-content:space-between;padding:2px 0"><span style="color:var(--t2)">'+d.name+'</span><span class="m" style="font-weight:600">'+F(d.value)+' Kč</span></div>').join('')+(s.rate?'<div style="color:var(--t3);margin-top:4px;font-size:10px">Kurz USD/CZK: '+s.rate+'</div>':'')+'</div>';
+    });
+  }else{row.style.display='none'}
+}
+async function delSnap(id){await dd('snap',id);rWealth()}
+
+// ═══ CATEGORIES + KEYWORDS ═══
+async function rCat(){
+const el=document.getElementById('pg-cat');
+// Group rules by category
+const rulesByCat={};RULES.forEach(r=>{if(!rulesByCat[r.c])rulesByCat[r.c]=[];rulesByCat[r.c].push(r.p)});
+el.innerHTML=`<div style="margin-bottom:18px"><h1 style="font-size:22px;font-weight:700;margin-bottom:2px">Kategorie & klíčová slova</h1><p style="font-size:12px;color:var(--t3)">Upravujte kategorie a pravidla pro automatickou kategorizaci</p></div>
+${CATS.map(c=>{const kw=rulesByCat[c.id]||[];return`<div class="cd" style="padding:14px 16px">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+<div style="display:flex;align-items:center;gap:8px">
+<div style="width:28px;height:28px;border-radius:7px;background:${c.c}20;display:flex;align-items:center;justify-content:center"><div style="width:10px;height:10px;border-radius:50%;background:${c.c}"></div></div>
+<input value="${c.n}" style="width:150px;font-weight:600" onchange="eCat(${c.id},'n',this.value)">
+<input type="color" value="${c.c}" style="width:32px;height:26px;padding:1px;border-radius:4px;cursor:pointer" onchange="eCat(${c.id},'c',this.value)">
+<span style="font-size:9px;color:var(--t3)">${[7,8,12,13,14].includes(c.id)?'nepočítá se jako výdaj':'výdaj'}</span>
+</div>
+${c.id>14?'<button class="bt bd bs" onclick="rmCat('+c.id+')">Smazat</button>':''}
+</div>
+<div style="font-size:10px;color:var(--t3);margin-bottom:4px">Klíčová slova (${kw.length}):</div>
+<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px" id="kw-${c.id}">${kw.map((w,j)=>`<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:6px;background:${c.c}12;color:${c.c};font-size:10px;font-weight:500">${w}<button style="background:none;border:none;cursor:pointer;color:${c.c};font-size:8px;padding:0 0 0 2px" onclick="rmKw(${c.id},'${w.replace(/'/g,"\\'")}')">×</button></span>`).join('')}</div>
+<div style="display:flex;gap:4px"><input id="nkw-${c.id}" placeholder="Přidat slovo..." style="flex:1;font-size:11px;padding:4px 8px" onkeydown="if(event.key==='Enter')addKw(${c.id})"><button class="bt bg bs" onclick="addKw(${c.id})">+</button></div>
+</div>`}).join('')}
+<div style="margin-top:12px;display:flex;gap:8px">
+<button class="bt bp bs" onclick="addCat()">+ Nová kategorie</button>
+<button class="bt bg bs" onclick="reapplyRules()">Překategorizovat vše</button>
+<button class="bt bd bs" onclick="if(confirm('Reset pravidel na výchozí?')){RULES=[...DEF_RULES];saveRules();rCat()}">Reset pravidel</button>
+</div>`;
+}
+async function eCat(id,f,v){const c=CATS.find(x=>x.id===id);if(c){c[f]=v;await saveCats();rCat()}}
+async function rmCat(id){if(!confirm('Smazat?'))return;CATS=CATS.filter(c=>c.id!==id);RULES=RULES.filter(r=>r.c!==id);await saveCats();await saveRules();rCat()}
+async function addCat(){const n=prompt('Název:');if(!n)return;const maxId=Math.max(...CATS.map(c=>c.id))+1;CATS.push({id:maxId,n,i:'',c:'#6b7280'});await saveCats();rCat()}
+async function addKw(catId){const inp=document.getElementById('nkw-'+catId);const w=inp?.value?.trim();if(!w)return;RULES.push({p:w,c:catId});await saveRules();
+// Re-categorize all matching transactions (including manually set ones, since user is explicitly defining this keyword)
+const tx=await dg('tx');let changed=0;const nw=N(w);
+for(const t of tx){const txt=N(t.description+' '+t.counterparty);if(txt.includes(nw)&&t.categoryId!==catId){t.categoryId=catId;t.autoCategory=true;await dp('tx',t);changed++}}
+inp.value='';rCat();dCH();if(changed)alert('Přeřazeno '+changed+' transakcí do kategorie '+gc(catId).n)}
+async function rmKw(catId,word){RULES=RULES.filter(r=>!(r.c===catId&&r.p===word));await saveRules();rCat()}
+async function reapplyRules(){
+const tx=await dg('tx');let changed=0;
+for(const t of tx){if(!t.autoCategory)continue;const newCat=catOf(t.description||'',t.counterparty||'',t.amount);if(newCat!==t.categoryId){t.categoryId=newCat;await dp('tx',t);changed++}}
+alert('Překategorizováno: '+changed+' transakcí');dCH();
+}
+
+// ═══ VYÚČTOVÁNÍ ═══
+async function rBill(){
+const imps=await dg('imp');const bills=imps.filter(i=>i.type==='bill').sort((a,b)=>new Date(b.date)-new Date(a.date));
+const persons=await gs('billPersons')||['Rodiče','Majda'];
+const el=document.getElementById('pg-bill');
+// Group by person
+const byP={};bills.forEach(b=>{if(!byP[b.person])byP[b.person]={bills:[],totalOwed:0,totalPaid:0};byP[b.person].bills.push(b);if(b.paid)byP[b.person].totalPaid+=b.total;else byP[b.person].totalOwed+=b.total});
+const totalOwed=bills.filter(b=>!b.paid).reduce((s,b)=>s+b.total,0);
+el.innerHTML=`<div style="margin-bottom:18px"><h1 style="font-size:22px;font-weight:700;margin-bottom:2px">Vyúčtování</h1><p style="font-size:12px;color:var(--t3)">Označte transakce v <a style="color:var(--ac);cursor:pointer" onclick="nav('tx')">Transakcích</a> a klikněte "Vyúčtovat"</p></div>
+${totalOwed?`<div class="cd" style="text-align:center;padding:16px"><div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:4px">Celkem k vyúčtování</div><div style="font-size:32px;font-weight:700;color:var(--o)">${F(totalOwed)} Kč</div></div>`:''}
+${Object.entries(byP).map(([name,data])=>`<div class="cd">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><h2 style="font-size:14px;font-weight:600">${name}</h2><div style="display:flex;gap:8px"><span class="tg" style="background:rgba(247,146,26,.1);color:var(--o)">Dluží: ${F(data.totalOwed)} Kč</span>${data.totalPaid?'<span class="tg" style="background:rgba(34,197,94,.1);color:var(--g)">Zaplaceno: '+F(data.totalPaid)+' Kč</span>':''}</div></div>
+${data.bills.map(b=>`<div style="border:1px solid var(--brd);border-radius:10px;padding:10px 12px;margin-bottom:8px;${b.paid?'opacity:.4':''}">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+<span style="font-size:11px;color:var(--t3)">${new Date(b.date).toLocaleDateString('cs-CZ',{day:'numeric',month:'short',year:'numeric'})}</span>
+<div style="display:flex;gap:6px;align-items:center"><span class="m" style="font-size:13px;font-weight:700;color:${b.paid?'var(--g)':'var(--o)'}">${F(b.total)} Kč</span>
+<button class="bt ${b.paid?'bg':'bp'} bs" onclick="toggleBillPaid(${b.id},${!b.paid})">${b.paid?'Označit nezaplaceno':'Zaplaceno'}</button>
+<button style="background:none;border:none;cursor:pointer;color:var(--r);font-size:10px" onclick="delBill(${b.id})">×</button></div></div>
+<table style="font-size:10.5px"><tbody>${(b.items||[]).map(x=>`<tr><td class="m" style="color:var(--t3);width:70px">${x.date}</td><td>${(x.desc||x.cp||'—').substring(0,35)}</td><td class="m" style="text-align:right;font-weight:500">${F(x.amount)} Kč</td></tr>`).join('')}</tbody></table>
+</div>`).join('')}</div>`).join('')}
+${!bills.length?'<div class="cd" style="text-align:center;padding:30px;color:var(--t3);font-size:12px"><p>Zatím žádná vyúčtování.</p><p style="margin-top:6px">Jděte do Transakcí → zaškrtněte položky → klikněte "Vyúčtovat"</p></div>':''}
+<div class="cd"><h2 style="font-size:13px;font-weight:600;margin-bottom:8px">Osoby</h2><div style="display:flex;flex-wrap:wrap;gap:6px">${persons.map(p=>'<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:8px;background:rgba(255,255,255,.03);border:1px solid var(--brd);font-size:11px">'+p+'<button style="background:none;border:none;cursor:pointer;color:var(--r);font-size:9px" onclick="rmPerson(\''+p.replace(/'/g,"\\'")+'\')">×</button></span>').join('')}<button class="bt bg bs" onclick="addPerson()">+ Osoba</button></div></div>`;
+}
+async function toggleBillPaid(id,paid){const imps=await dg('imp');const b=imps.find(x=>x.id===id);if(!b)return;b.paid=paid;await dp('imp',b);rBill()}
+async function delBill(id){if(!confirm('Smazat?'))return;await dd('imp',id);rBill()}
+async function addPerson(){const n=prompt('Jméno:');if(!n)return;const p=await gs('billPersons')||[];if(!p.includes(n)){p.push(n);await ss('billPersons',p)}rBill()}
+async function rmPerson(name){if(!confirm('Smazat osobu '+name+'?'))return;let p=await gs('billPersons')||[];p=p.filter(x=>x!==name);await ss('billPersons',p);rBill()}
+
+// ═══ INIT ═══
+(async function(){try{await odb();await loadCats();await loadRules();await rDash()}catch(e){console.error(e);document.getElementById('pg-dash').innerHTML='<div class="al al-e">'+e.message+' — zkuste F5</div>'}})();
+</script>
+</body>
+</html>
